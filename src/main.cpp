@@ -1,52 +1,67 @@
-// -*- mode: C++; c-indent-level: 4; c-basic-offset: 4; indent-tabs-mode: nil; -*-
-
-// we only include RcppArmadillo.h which pulls Rcpp.h in for us
 #include "RcppArmadillo.h"
-
-// via the depends attribute we tell Rcpp to create hooks for
-// RcppArmadillo so that the build process will know what to do
-//
 // [[Rcpp::depends(RcppArmadillo)]]
 
-// simple example of creating two matrices and
-// returning the result of an operatioon on them
-//
-// via the exports attribute we tell Rcpp to make this function
-// available from R
-//
+// Target Distribution ---------------------------------------------------------
 // [[Rcpp::export]]
-arma::mat rcpparma_hello_world() {
-    arma::mat m1 = arma::eye<arma::mat>(3, 3);
-    arma::mat m2 = arma::eye<arma::mat>(3, 3);
-	                     
-    return m1 + 3 * (m1 + m2);
+double tg_dist_ind(double x, double a, double b){
+  return std::exp(-std::pow(std::abs(x), a)/b);
 }
 
-
-// another simple example: outer product of a vector, 
-// returning a matrix
-//
 // [[Rcpp::export]]
-arma::mat rcpparma_outerproduct(const arma::colvec & x) {
-    arma::mat m = x * x.t();
-    return m;
+arma::vec tg_dist(arma::vec x, double a, double b){
+  return arma::exp(-arma::pow(arma::abs(x), a)/b);
 }
 
-// and the inner product returns a scalar
-//
+// Important Sampling ----------------------------------------------------------
 // [[Rcpp::export]]
-double rcpparma_innerproduct(const arma::colvec & x) {
-    double v = arma::as_scalar(x.t() * x);
-    return v;
+arma::mat isRcpp(unsigned int n, double a, double b, double df){
+  
+  arma::mat result(n, 5, arma::fill::zeros);
+  Rcpp::NumericVector xRcpp = Rcpp::rt(n, df); // Envelope distribution: t with df = 3
+  Rcpp::NumericVector fxRcpp = Rcpp::dt(xRcpp, df);
+  
+  arma::vec x = Rcpp::as<arma::vec>(Rcpp::wrap(xRcpp));
+  arma::vec fx = Rcpp::as<arma::vec>(Rcpp::wrap(fxRcpp));
+  
+  result.col(0) = x;
+  result.col(1) = fx;
+  result.col(2) = tg_dist(x, a, b);
+  result.col(3) = tg_dist(x, a, b)/fx;
+  
+  double sumW = arma::accu(tg_dist(x, a, b)/fx);
+  result.col(4) = result.col(3)/sumW;
+  
+  return result;
+  
 }
 
-
-// and we can use Rcpp::List to return both at the same time
-//
+// Rejection Sampling ----------------------------------------------------------
 // [[Rcpp::export]]
-Rcpp::List rcpparma_bothproducts(const arma::colvec & x) {
-    arma::mat op = x * x.t();
-    double    ip = arma::as_scalar(x.t() * x);
-    return Rcpp::List::create(Rcpp::Named("outer")=op,
-                              Rcpp::Named("inner")=ip);
+arma::vec rsRcpp(unsigned int n, double alp, double a, double b, double df){
+  
+  arma::vec result(n, arma::fill::zeros);
+  
+  unsigned int counter = 0;
+  double y = 0;
+  double u = 0;
+  double e = 0;
+  
+  while(counter < n){
+    y = R::rt(df);
+    u = R::runif(0.0, 1.0);
+    e = R::dt(y, df, 0)/alp;
+    if(u <= tg_dist_ind(y, a, b)/e){
+      result.row(counter).fill(y);
+      counter += 1;
+    }
+  }
+  
+  return result;
+  
 }
+
+// -----------------------------------------------------------------------------
+
+
+
+
