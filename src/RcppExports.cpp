@@ -11,55 +11,67 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// rcpparma_hello_world
-arma::mat rcpparma_hello_world();
-RcppExport SEXP _HW4MC_rcpparma_hello_world() {
+// tg_dist_ind
+double tg_dist_ind(double x, double a, double b);
+RcppExport SEXP _HW4MC_tg_dist_ind(SEXP xSEXP, SEXP aSEXP, SEXP bSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    rcpp_result_gen = Rcpp::wrap(rcpparma_hello_world());
+    Rcpp::traits::input_parameter< double >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type a(aSEXP);
+    Rcpp::traits::input_parameter< double >::type b(bSEXP);
+    rcpp_result_gen = Rcpp::wrap(tg_dist_ind(x, a, b));
     return rcpp_result_gen;
 END_RCPP
 }
-// rcpparma_outerproduct
-arma::mat rcpparma_outerproduct(const arma::colvec& x);
-RcppExport SEXP _HW4MC_rcpparma_outerproduct(SEXP xSEXP) {
+// tg_dist
+arma::vec tg_dist(arma::vec x, double a, double b);
+RcppExport SEXP _HW4MC_tg_dist(SEXP xSEXP, SEXP aSEXP, SEXP bSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::colvec& >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(rcpparma_outerproduct(x));
+    Rcpp::traits::input_parameter< arma::vec >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type a(aSEXP);
+    Rcpp::traits::input_parameter< double >::type b(bSEXP);
+    rcpp_result_gen = Rcpp::wrap(tg_dist(x, a, b));
     return rcpp_result_gen;
 END_RCPP
 }
-// rcpparma_innerproduct
-double rcpparma_innerproduct(const arma::colvec& x);
-RcppExport SEXP _HW4MC_rcpparma_innerproduct(SEXP xSEXP) {
+// isRcpp
+arma::mat isRcpp(unsigned int n, double a, double b, double df);
+RcppExport SEXP _HW4MC_isRcpp(SEXP nSEXP, SEXP aSEXP, SEXP bSEXP, SEXP dfSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::colvec& >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(rcpparma_innerproduct(x));
+    Rcpp::traits::input_parameter< unsigned int >::type n(nSEXP);
+    Rcpp::traits::input_parameter< double >::type a(aSEXP);
+    Rcpp::traits::input_parameter< double >::type b(bSEXP);
+    Rcpp::traits::input_parameter< double >::type df(dfSEXP);
+    rcpp_result_gen = Rcpp::wrap(isRcpp(n, a, b, df));
     return rcpp_result_gen;
 END_RCPP
 }
-// rcpparma_bothproducts
-Rcpp::List rcpparma_bothproducts(const arma::colvec& x);
-RcppExport SEXP _HW4MC_rcpparma_bothproducts(SEXP xSEXP) {
+// rsRcpp
+arma::vec rsRcpp(unsigned int n, double alp, double a, double b, double df);
+RcppExport SEXP _HW4MC_rsRcpp(SEXP nSEXP, SEXP alpSEXP, SEXP aSEXP, SEXP bSEXP, SEXP dfSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::colvec& >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(rcpparma_bothproducts(x));
+    Rcpp::traits::input_parameter< unsigned int >::type n(nSEXP);
+    Rcpp::traits::input_parameter< double >::type alp(alpSEXP);
+    Rcpp::traits::input_parameter< double >::type a(aSEXP);
+    Rcpp::traits::input_parameter< double >::type b(bSEXP);
+    Rcpp::traits::input_parameter< double >::type df(dfSEXP);
+    rcpp_result_gen = Rcpp::wrap(rsRcpp(n, alp, a, b, df));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_HW4MC_rcpparma_hello_world", (DL_FUNC) &_HW4MC_rcpparma_hello_world, 0},
-    {"_HW4MC_rcpparma_outerproduct", (DL_FUNC) &_HW4MC_rcpparma_outerproduct, 1},
-    {"_HW4MC_rcpparma_innerproduct", (DL_FUNC) &_HW4MC_rcpparma_innerproduct, 1},
-    {"_HW4MC_rcpparma_bothproducts", (DL_FUNC) &_HW4MC_rcpparma_bothproducts, 1},
+    {"_HW4MC_tg_dist_ind", (DL_FUNC) &_HW4MC_tg_dist_ind, 3},
+    {"_HW4MC_tg_dist", (DL_FUNC) &_HW4MC_tg_dist, 3},
+    {"_HW4MC_isRcpp", (DL_FUNC) &_HW4MC_isRcpp, 4},
+    {"_HW4MC_rsRcpp", (DL_FUNC) &_HW4MC_rsRcpp, 5},
     {NULL, NULL, 0}
 };
 
