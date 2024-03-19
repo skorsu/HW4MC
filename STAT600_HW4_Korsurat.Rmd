@@ -9,6 +9,7 @@ knitr::opts_chunk$set(echo = FALSE)
 
 library(tidyverse)
 library(knitr)
+library(kableExtra)
 library(Rcpp)
 library(RcppArmadillo)
 library(devtools)
@@ -112,105 +113,96 @@ grid.arrange(grobs = list(p2, p3))
 
 Figure 2 shows that all of the proposed distribution have a heavier tail compared to the target distribution. Besides, as shown in the Figure 1, the envelope function for both $\alpha$ are greater than the target distribution for the all range of x.
 
+First, we will measure the performance for estimatinf $\sigma^{2} = E\left[X^{2}\right]$
+
+For each methods, I will run for 100, 1000, and 10000 times. Note that for the  the rejection sampling, I will set $\alpha$ to be 0.25. Besides, for the SIR, I will let the important sampling step sampling for 500 observations.
+
 ```{r}
 
-### Run the models
-### Define the function of interests
-h_fx <- function(x){x^2}
+### Function: Run the model for each m and function of interests
+runAll <- function(fx, n, seed = 1){
+  
+  ### (a): Importance Sampling
+  set.seed(seed, kind = "L'Ecuyer-CMRG")
+  registerDoParallel(5)
+  impResult <- foreach(t = 1:1000, .combine = "rbind") %dopar% {
+    startT <- Sys.time()
+    estimate <- impSamp(h = fx, n = n, a = 3, b = 3, df = 3, showCalc = FALSE)
+    totalT <- difftime(Sys.time(), startT)
+    c(estimate, totalT)
+  }
+  stopImplicitCluster()
+  
+  ### (b): Rejection Sampling (alpha = 0.25)
+  set.seed(seed, kind = "L'Ecuyer-CMRG")
+  registerDoParallel(5)
+  rejResult <- foreach(t = 1:1000, .combine = "rbind") %dopar% {
+    startT <- Sys.time()
+    estimate <- rejSamp(h = fx, n = n, alp = 0.25, a = 3, b = 3, df = 3, showSamp = FALSE)
+    totalT <- difftime(Sys.time(), startT)
+    c(estimate, totalT)
+  }
+  stopImplicitCluster()
+  
+  ### (c): Sampling Importance Resampling
+  set.seed(seed, kind = "L'Ecuyer-CMRG")
+  registerDoParallel(5)
+  sirResult <- foreach(t = 1:1000, .combine = "rbind") %dopar% {
+    startT <- Sys.time()
+    estimate <- SIRSamp(h = fx, n = n, M = 500, a = 3, b = 3, df = 3)
+    totalT <- difftime(Sys.time(), startT)
+    c(estimate, totalT)
+  }
+  stopImplicitCluster()
+  
+  ### (d): Philippe and Robert
+  set.seed(seed, kind = "L'Ecuyer-CMRG")
+  registerDoParallel(5)
+  phroResult <- foreach(t = 1:1000, .combine = "rbind") %dopar% {
+    startT <- Sys.time()
+    estimate <- PhRoMethod(h = fx, n = n, alp = 0.25, a = 3, b = 3, df = 3)
+    totalT <- difftime(Sys.time(), startT)
+    c(estimate, totalT)
+  }
+  stopImplicitCluster()
+  
+  list(impResult = impResult, rejResult = rejResult, 
+       sirResult = sirResult, phroResult = phroResult)
 
-### (a): Importance Sampling
-set.seed(12, kind = "L'Ecuyer-CMRG")
-registerDoParallel(5)
-impResult <- foreach(t = 1:10000, .combine = "rbind") %dopar% {
-  
-  startT <- Sys.time()
-  estimate <- impSamp(h = h_fx, n = 10000, a = 3, b = 3, df = 3, showCalc = FALSE)
-  totalT <- difftime(Sys.time(), startT)
-  c(estimate, totalT)
-  
 }
-stopImplicitCluster()
-
-### (b): Rejection Sampling (alpha = 0.25)
-set.seed(12, kind = "L'Ecuyer-CMRG")
-registerDoParallel(5)
-rejResult <- foreach(t = 1:10000, .combine = "rbind") %dopar% {
-  
-  startT <- Sys.time()
-  estimate <- rejSamp(h = h_fx, n = 10000, alp = 0.25, a = 3, b = 3, df = 3, showSamp = FALSE)
-  totalT <- difftime(Sys.time(), startT)
-  c(estimate, totalT)
-  
-}
-stopImplicitCluster()
-
-### (c): Sampling Importance Resampling
-set.seed(12, kind = "L'Ecuyer-CMRG")
-registerDoParallel(5)
-sirResult <- foreach(t = 1:10000, .combine = "rbind") %dopar% {
-  
-  startT <- Sys.time()
-  estimate <- SIRSamp(h = h_fx, n = 10000, M = 1000, a = 3, b = 3, df = 3)
-  totalT <- difftime(Sys.time(), startT)
-  c(estimate, totalT)
-  
-}
-stopImplicitCluster()
-
-### (d): Philippe and Robert
-set.seed(12, kind = "L'Ecuyer-CMRG")
-registerDoParallel(5)
-phroResult <- foreach(t = 1:10000, .combine = "rbind") %dopar% {
-  
-  startT <- Sys.time()
-  estimate <- PhRoMethod(h = h_fx, n = 10000, alp = 0.25, a = 3, b = 3, df = 3)
-  totalT <- difftime(Sys.time(), startT)
-  c(estimate, totalT)
-  
-}
-stopImplicitCluster()
 ```
 
-```{r, warning=FALSE}
 
-### Histogram
-p1 <- ggplot(data.frame(x = impResult[, 1]), aes(x = x)) +
-  geom_histogram(binwidth = 0.001) +
-  xlim(0.5, 1) +
-  labs(title = "Importance Sampling", x = " ", y = "Frequency") +
-  theme_bw()
+```{r}
 
-p2 <- ggplot(data.frame(x = rejResult[, 1]), aes(x = x)) +
-  geom_histogram(binwidth = 0.001) +
-  xlim(0.5, 1) +
-  labs(title = "Rejection Sampling", x = " ", y = "Frequency") +
-  theme_bw()
-
-p3 <- ggplot(data.frame(x = sirResult[, 1]), aes(x = x)) +
-  geom_histogram(binwidth = 0.001) +
-  labs(title = "Sampling Importance Resampling", x = " ", y = "Frequency") +
-  xlim(0.5, 1) +
-  theme_bw()
-
-p4 <- ggplot(data.frame(x = phroResult[, 1]), aes(x = x)) +
-  geom_histogram(binwidth = 0.001) +
-  labs(title = "Philippe and Robert", x = " ", y = "Frequency") +
-  xlim(0.5, 1) +
-  theme_bw()
-
-grid.arrange(grobs = list(p1, p2, p3, p4))
+### Run for E[X^2]
+x2n100 <- runAll(fx = function(x){x^2}, n = 100, seed = 1)
+x2n1000 <- runAll(fx = function(x){x^2}, n = 1000, seed = 1)
+x2n10000 <- runAll(fx = function(x){x^2}, n = 10000, seed = 1)
 ```
 
 ```{r}
 
-### Summary table
-estResult <- c(meanSD(impResult[, 1]), meanSD(rejResult[, 1]), meanSD(sirResult[, 1]), meanSD(phroResult[, 1]))
-timeResult <- c(meanSD(impResult[, 2]), meanSD(rejResult[, 2]), meanSD(sirResult[, 2]), meanSD(phroResult[, 2]))
-data.frame(estResult, timeResult) %>%
-  `rownames<-`(c("Importance Sampling", "Rejection Sampling", 
-                 "Sampling Importance Resampling", "Philippe and Robert")) %>%
-  kable(col.names = c("Estimates", "Computational Time"))
+### Function: ggplot for all result
 ```
+
+
+```{r}
+
+### Result: E[X^2]
+data.frame(c(rep("n = 100", 4), rep("n = 1000", 4), rep("n = 10000", 4)),
+           rep(c("Importance Sampling", "Rejection Sampling", 
+                 "Sampling Importance Resampling", "Philippe and Robert"), 3),
+           rbind(t(sapply(1:4, function(x){apply(x2n100[[x]], 2, meanSD)})),
+                 t(sapply(1:4, function(x){apply(x2n1000[[x]], 2, meanSD)})),
+                 t(sapply(1:4, function(x){apply(x2n10000[[x]], 2, meanSD)})))) %>%
+  kable(align = c("c", "l", "c", "c"), col.names = c("n", "Method", "Estimate", "Time"),
+        booktabs = TRUE, caption = "The result for estimating $E[X^2]$") %>%
+  kable_paper(full_width = FALSE) %>%
+  column_spec(1, bold = TRUE) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
 
 # Question 2
 
